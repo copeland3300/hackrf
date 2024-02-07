@@ -28,6 +28,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -92,7 +93,8 @@ int gettimeofday(struct timeval* tv, void* ignored)
 #define FREQ_ONE_MHZ (1000000ull)
 
 #define FREQ_MIN_MHZ (0)    /*    0 MHz */
-#define FREQ_MAX_MHZ (7250) /* 7250 MHz */
+// #define FREQ_MAX_MHZ (7250) /* 7250 MHz */
+#define FREQ_MAX_MHZ (8000) /* 7250 MHz */
 
 #define DEFAULT_SAMPLE_RATE_HZ            (20000000) /* 20MHz default sample rate */
 #define DEFAULT_BASEBAND_FILTER_BANDWIDTH (15000000) /* 15MHz default */
@@ -404,6 +406,7 @@ static void usage()
 		"\t[-B] # binary output\n"
 		"\t[-I] # binary inverse FFT output\n"
 		"\t[-n] # keep the same timestamp within a sweep\n"
+		"\t[-s] # pause after each sweep\n"
 		"\t-r filename # output file\n"
 		"\n"
 		"Output fields:\n"
@@ -472,12 +475,13 @@ int main(int argc, char** argv)
 	float sweep_rate = 0;
 	unsigned int lna_gain = 16, vga_gain = 20;
 	uint32_t freq_min = 0;
-	uint32_t freq_max = 6000;
+	uint32_t freq_max = 6000; //should this match the value defined above?
 	uint32_t requested_fft_bin_width;
 	const char* fftwWisdomPath = NULL;
 	int fftw_plan_type = FFTW_MEASURE;
+	uint32_t pause_time = 0;
 
-	while ((opt = getopt(argc, argv, "a:f:p:l:g:d:N:w:W:P:n1BIr:h?")) != EOF) {
+	while ((opt = getopt(argc, argv, "s:a:f:p:l:g:d:N:w:W:P:n1BIr:h?")) != EOF) {
 		result = HACKRF_SUCCESS;
 		switch (opt) {
 		case 'd':
@@ -577,7 +581,11 @@ int main(int argc, char** argv)
 		case 'r':
 			path = optarg;
 			break;
-
+		case 's':
+			// pause_time = optarg;
+			result = parse_u32(optarg, &pause_time);
+			fprintf(stderr, "\npause set\n");
+			break;
 		case 'h':
 		case '?':
 			usage();
@@ -617,6 +625,11 @@ int main(int argc, char** argv)
 		fprintf(stderr, "warning: vga_gain (-g) must be a multiple of 2\n");
 	}
 
+	//
+	if (pause_time != 0) {
+		fprintf(stderr, "\nSetting mid-sweep pause to %d\n", pause_time);
+	}
+	
 	if (amp) {
 		if (amp_enable > 1) {
 			fprintf(stderr, "argument error: amp_enable shall be 0 or 1.\n");
@@ -902,6 +915,9 @@ int main(int argc, char** argv)
 			byte_count = 0;
 			time_prev = time_now;
 		}
+		//Implement pause here
+		fprintf(stderr, "\nshould pause here\n");
+		m_sleep(pause_time);
 	}
 
 	fflush(outfile);
