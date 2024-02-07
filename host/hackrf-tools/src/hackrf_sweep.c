@@ -98,6 +98,7 @@ int gettimeofday(struct timeval* tv, void* ignored)
 
 #define DEFAULT_SAMPLE_RATE_HZ            (20000000) /* 20MHz default sample rate */
 #define DEFAULT_BASEBAND_FILTER_BANDWIDTH (15000000) /* 15MHz default */
+//should create a way to set this from the command line
 
 #define TUNE_STEP (DEFAULT_SAMPLE_RATE_HZ / FREQ_ONE_MHZ)
 #define OFFSET    7500000
@@ -310,6 +311,8 @@ int rx_callback(hackrf_transfer* transfer)
 		}
 		buf += fftSize * 2;
 		fftwf_execute(fftwPlan);
+		// //Implement pause here
+		// sleep(pause_time);
 		for (i = 0; i < fftSize; i++) {
 			pwr[i] = logPower(fftwOut[i], 1.0f / fftSize);
 		}
@@ -479,7 +482,7 @@ int main(int argc, char** argv)
 	uint32_t requested_fft_bin_width;
 	const char* fftwWisdomPath = NULL;
 	int fftw_plan_type = FFTW_MEASURE;
-	uint32_t pause_time = 0;
+	unsigned int pause_time = 0;
 
 	while ((opt = getopt(argc, argv, "s:a:f:p:l:g:d:N:w:W:P:n1BIr:h?")) != EOF) {
 		result = HACKRF_SUCCESS;
@@ -670,6 +673,8 @@ int main(int argc, char** argv)
 	 * for interleaved mode. With our fixed sample rate of 20 Msps, that
 	 * results in a maximum bin width of 5000000 Hz.
 	 */
+	fprintf(stderr, "FFT Size is currently %d\n\n", fftSize);
+
 	if (4 > fftSize) {
 		fprintf(stderr,
 			"argument error: FFT bin width (-w) must be no more than 5000000\n");
@@ -895,7 +900,6 @@ int main(int argc, char** argv)
 	while ((hackrf_is_streaming(device) == HACKRF_TRUE) && (do_exit == false)) {
 		float time_difference;
 		m_sleep(50);
-
 		gettimeofday(&time_now, NULL);
 		if (TimevalDiff(&time_now, &time_prev) >= 1.0f) {
 			time_difference = TimevalDiff(&time_now, &t_start);
@@ -909,15 +913,12 @@ int main(int argc, char** argv)
 			if (byte_count == 0) {
 				exit_code = EXIT_FAILURE;
 				fprintf(stderr,
-					"\nCouldn't transfer any data for one second.\n");
+					"\nCould't transfer any data for one second.\n");
 				break;
 			}
 			byte_count = 0;
 			time_prev = time_now;
 		}
-		//Implement pause here
-		fprintf(stderr, "\nshould pause here\n");
-		m_sleep(pause_time);
 	}
 
 	fflush(outfile);
