@@ -116,6 +116,7 @@ uint32_t num_sweeps = 0;
 int num_ranges = 0;
 uint16_t frequencies[MAX_SWEEP_RANGES * 2];
 int step_count;
+unsigned int pause_time = 0;
 
 static float TimevalDiff(const struct timeval* a, const struct timeval* b)
 {
@@ -387,6 +388,8 @@ int rx_callback(hackrf_transfer* transfer)
 			fprintf(outfile, "\n");
 		}
 	}
+	fprintf(stderr, "\nPause\n");
+	sleep(pause_time);
 	return 0;
 }
 
@@ -482,7 +485,7 @@ int main(int argc, char** argv)
 	uint32_t requested_fft_bin_width;
 	const char* fftwWisdomPath = NULL;
 	int fftw_plan_type = FFTW_MEASURE;
-	unsigned int pause_time = 0;
+	
 
 	while ((opt = getopt(argc, argv, "s:a:f:p:l:g:d:N:w:W:P:n1BIr:h?")) != EOF) {
 		result = HACKRF_SUCCESS;
@@ -587,7 +590,6 @@ int main(int argc, char** argv)
 		case 's':
 			// pause_time = optarg;
 			result = parse_u32(optarg, &pause_time);
-			fprintf(stderr, "\npause set\n");
 			break;
 		case 'h':
 		case '?':
